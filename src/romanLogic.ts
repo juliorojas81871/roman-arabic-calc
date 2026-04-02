@@ -27,43 +27,40 @@ export const ROMAN_MAP: [string, number][] = [
     ['V', 5],
     ['IV', 4],
     ['I', 1],
-  ];
+];
 
-  export const MAX_ROMAN = 2000000;
+export const MAX_ROMAN = 2000000;
 
-  // ── Arabic → Roman ─────────────────────────────────────────────────────────
-  export function toRoman(num: number): string {
+export function toRoman(num: number): string {
     if (!Number.isInteger(num) || num < 1 || num > MAX_ROMAN) return '';
     let result = '';
     let rem = num;
     for (const [symbol, value] of ROMAN_MAP) {
-      while (rem >= value) {
+        while (rem >= value) {
         result += symbol;
         rem -= value;
-      }
+        }
     }
     return result;
-  }
+}
 
-  // ── Roman → Arabic ─────────────────────────────────────────────────────────
-  export function fromRoman(input: string): number | null {
+export function fromRoman(input: string): number | null {
     if (!input.trim()) return null;
-    // Normalise to uppercase
     const src = input.replace(/[a-z]/g, c => c.toUpperCase());
     let i = 0;
     let total = 0;
     while (i < src.length) {
-      let matched = false;
-      for (const [symbol, value] of ROMAN_MAP) {
+        let matched = false;
+        for (const [symbol, value] of ROMAN_MAP) {
         if (src.startsWith(symbol, i)) {
-          total += value;
-          i += symbol.length;
-          matched = true;
-          break;
+            total += value;
+            i += symbol.length;
+            matched = true;
+            break;
         }
-      }
-      if (!matched) return null;
+        }
+        if (!matched) return null;
     }
     if (total < 1 || total > MAX_ROMAN) return null;
     return total;
-  }
+}

@@ -112,7 +112,9 @@ export default function Calculator() {
 
   const handleBack = () => {
     setError('');
-    const next = display.slice(0, -1);
+
+    const next = display.replace(/.\u0304?$/, '');
+
     setDisplay(next);
     if (!next) setHasInput(false);
   };
