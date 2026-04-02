@@ -2,6 +2,8 @@
 
 A sleek, functional calculator built with **React**, **TypeScript**, and **Tailwind CSS**. This tool allows users to perform arithmetic operations using both standard Arabic numerals and classical Roman numerals, with support for large values using the **vinculum** (overline) notation.
 
+[Test Code Live](https://roman-arabic-calc.vercel.app)
+
 ## 🚀 Tech Stack
 
 * **Framework:** [React](https://reactjs.org/)
@@ -13,7 +15,7 @@ A sleek, functional calculator built with **React**, **TypeScript**, and **Tailw
 
 1.  **Clone the repository:**
     ```bash
-    git clone [https://github.com/your-username/roman-calculator.git](https://github.com/your-username/roman-calculator.git)
+    git clone [https://github.com/juliorojas81871/roman-arabic-calc.git](https://github.com/juliorojas81871/roman-arabic-calc.git)
     cd roman-calculator
     ```
 
