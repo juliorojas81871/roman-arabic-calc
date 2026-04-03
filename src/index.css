@@ -1,1 +1,31 @@
 @import "tailwindcss";
+
+@layer components {
+    .calc-btn-base {
+      @apply rounded-xl font-semibold transition-all duration-150 select-none cursor-pointer active:scale-95 text-lg flex items-center justify-center;
+    }
+
+    .calc-btn-active {
+      @apply py-3 text-xl bg-yellow-300 text-gray-900 scale-95 shadow-inner;
+    }
+
+    .calc-btn-num {
+      @apply py-3 bg-gray-800 hover:bg-gray-700 text-white;
+    }
+
+    .calc-btn-op {
+      @apply py-2.5 text-xl bg-yellow-600 hover:bg-yellow-500 text-gray-900;
+    }
+
+    .calc-btn-clear {
+      @apply py-3 bg-red-700 hover:bg-red-600 text-white;
+    }
+
+    .calc-btn-action {
+      @apply py-3 bg-gray-700 hover:bg-gray-600 text-white;
+    }
+
+    .calc-btn-equals {
+      @apply py-3.5 text-xl bg-yellow-500 hover:bg-yellow-400 text-gray-900 mt-1;
+    }
+}

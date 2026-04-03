@@ -1,7 +1,6 @@
-import Calculator from './Calculator'
+import React from 'react';
+import RomanCalculator from './components/RomanCalculator/RomanCalculator.tsx';
 
-function App() {
-  return <Calculator />
+export default function App() {
+  return <RomanCalculator />;
 }
-
-export default App
