@@ -1,4 +1,3 @@
-import React from 'react';
 import type { Operator } from './types.ts';
 import { useCalculator } from './useCalculator.ts';
 import { fromRoman, toRoman, MAX_ROMAN } from '../../utils/romanConverter.ts';
