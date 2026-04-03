@@ -1,6 +1,5 @@
 export const MAX_ROMAN = 3999999;
 
-// A clean, deterministic map for generating Roman numerals
 const ROMAN_MAP: [string, number][] = [
   ['M̄', 1000000], ['C̄M̄', 900000], ['D̄', 500000], ['C̄D̄', 400000],
   ['C̄', 100000], ['X̄C̄', 90000], ['L̄', 50000], ['X̄L̄', 40000],
@@ -14,7 +13,6 @@ export function toRoman(num: number): string {
   if (!Number.isInteger(num) || num < 1 || num > MAX_ROMAN) return '';
   let result = '';
   let remainder = num;
-
   for (const [symbol, value] of ROMAN_MAP) {
     while (remainder >= value) {
       result += symbol;
@@ -24,25 +22,28 @@ export function toRoman(num: number): string {
   return result;
 }
 
-export function fromRoman(input: string): number | null {
+export function fromRomanRaw(input: string): number | null {
   if (!input.trim()) return null;
-  const sanitizedInput = input.toUpperCase();
+  const sanitized = input.toUpperCase();
   let index = 0;
   let total = 0;
-
-  while (index < sanitizedInput.length) {
-    let matchFound = false;
+  while (index < sanitized.length) {
+    let matched = false;
     for (const [symbol, value] of ROMAN_MAP) {
-      if (sanitizedInput.startsWith(symbol, index)) {
+      if (sanitized.startsWith(symbol, index)) {
         total += value;
         index += symbol.length;
-        matchFound = true;
+        matched = true;
         break;
       }
     }
-    if (!matchFound) return null;
+    if (!matched) return null;
   }
+  return total < 1 ? null : total;
+}
 
-  if (total < 1 || total > MAX_ROMAN) return null;
-  return total;
+export function fromRoman(input: string): number | null {
+  const value = fromRomanRaw(input);
+  if (value === null || value > MAX_ROMAN) return null;
+  return value;
 }

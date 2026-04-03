@@ -1,3 +1,4 @@
+// types.ts
 export type Operator = '+' | '−' | '×' | '÷';
 export type CalculatorMode = 'arabic' | 'roman';
 

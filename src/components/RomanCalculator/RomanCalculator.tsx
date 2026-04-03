@@ -1,51 +1,86 @@
+// RomanCalculator.tsx
+import { useEffect } from 'react';
 import type { Operator } from './types.ts';
 import { useCalculator } from './useCalculator.ts';
-import { fromRoman, toRoman, MAX_ROMAN } from '../../utils/romanConverter.ts';
+import { fromRoman, fromRomanRaw, toRoman } from '../../utils/romanConverter.ts';
 
 const ARABIC_ROWS = [['7', '8', '9'], ['4', '5', '6'], ['1', '2', '3']];
-const ROMAN_BASIC = ['I', 'V', 'X', 'L', 'C', 'D', 'M'];
-const ROMAN_HIGH = ['Ī', 'V̄', 'X̄', 'L̄', 'C̄', 'D̄', 'M̄'];
+// Split into two rows so all 7 buttons fill their grids evenly:
+const ROMAN_ROW1 = ['I', 'V', 'X', 'L'];
+const ROMAN_ROW2 = ['C', 'D', 'M'];
 const OPERATORS: Operator[] = ['+', '−', '×', '÷'];
 
 export default function RomanCalculator() {
   const { state, dispatch } = useCalculator();
 
-  const getSecondaryValue = (): string => {
-    if (state.errorMessage === 'LIMIT REACHED') {
-      return state.mode === 'roman' ? String(state.storedValue) : 'LIMIT REACHED';
+  const isInputBlocked = state.errorMessage === 'Input Too High';
+  const isValueTooHigh = state.errorMessage === 'Value Too High';
+  const hasOtherError = state.errorMessage !== '' && !isInputBlocked && !isValueTooHigh;
+
+  // ── Keyboard support ──────────────────────────────────────────────────────
+  useEffect(() => {
+    function handleKeyDown(e: KeyboardEvent) {
+      if (e.ctrlKey || e.altKey || e.metaKey) return;
+      const key = e.key;
+
+      if (state.mode === 'arabic' && /^[0-9]$/.test(key)) {
+        e.preventDefault();
+        dispatch({ type: 'INPUT_CHAR', payload: key });
+      } else if (state.mode === 'roman' && /^[IVXLCDMivxlcdm]$/.test(key)) {
+        e.preventDefault();
+        dispatch({ type: 'INPUT_CHAR', payload: key.toUpperCase() });
+      } else if (key === '+') {
+        e.preventDefault();
+        dispatch({ type: 'SET_OPERATOR', payload: '+' });
+      } else if (key === '-') {
+        e.preventDefault();
+        dispatch({ type: 'SET_OPERATOR', payload: '−' });
+      } else if (key === '*') {
+        e.preventDefault();
+        dispatch({ type: 'SET_OPERATOR', payload: '×' });
+      } else if (key === '/') {
+        e.preventDefault();
+        dispatch({ type: 'SET_OPERATOR', payload: '÷' });
+      } else if (key === '=' || key === 'Enter') {
+        e.preventDefault();
+        dispatch({ type: 'CALCULATE' });
+      } else if (key === 'Backspace') {
+        e.preventDefault();
+        dispatch({ type: 'BACKSPACE' });
+      } else if (key === 'Escape' || key === 'Delete') {
+        e.preventDefault();
+        dispatch({ type: 'CLEAR' });
+      }
     }
 
-    if (!state.currentInput) return state.mode === 'arabic' ? '—' : '0';
-    const numeric = state.mode === 'arabic'
-      ? parseInt(state.currentInput, 10)
-      : fromRoman(state.currentInput);
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [state.mode, dispatch]);
 
-    if (!numeric || numeric < 1 || numeric > MAX_ROMAN) {
-      return state.mode === 'roman' ? String(numeric || 0) : 'LIMIT REACHED';
-    }
-    return state.mode === 'arabic' ? toRoman(numeric) : String(numeric);
+  // ── Helpers ───────────────────────────────────────────────────────────────
+  const getSecondaryValue = (): string | null => {
+    // Arabic mode: never show a Roman secondary value
+    if (state.mode === 'arabic') return null;
+
+    if (isValueTooHigh) return state.currentInput;
+    if (isInputBlocked) return String(fromRomanRaw(state.currentInput) ?? '?');
+    if (!state.currentInput) return '0';
+
+    const numeric = fromRoman(state.currentInput);
+    if (numeric == null || isNaN(numeric)) return '—';
+    return String(numeric);
   };
 
-  const getBtnClass = (active: boolean, type: 'num' | 'op' | 'action' | 'clear' | 'equals' = 'num') => {
+  const secondary = getSecondaryValue();
+
+  const getBtnClass = (
+    active: boolean,
+    type: 'num' | 'op' | 'action' | 'clear' | 'equals' = 'num',
+    disabled = false
+  ) => {
+    if (disabled) return 'calc-btn-base opacity-30 cursor-not-allowed';
     if (active) return 'calc-btn-base calc-btn-active';
     return `calc-btn-base calc-btn-${type}`;
-  };
-
-  const renderPrimaryDisplay = () => {
-    if (state.errorMessage === 'LIMIT REACHED' && state.mode === 'roman') {
-      return <span className="text-3xl font-bold tracking-widest text-red-500">LIMIT REACHED</span>;
-    }
-
-    if (state.errorMessage && state.mode === 'roman') {
-      const numeric = fromRoman(state.currentInput) || state.storedValue;
-      return <span className="text-4xl text-red-500">{numeric}</span>;
-    }
-
-    return (
-      <span className="text-4xl break-all">
-        {state.currentInput || (state.mode === 'arabic' ? '0' : '_')}
-      </span>
-    );
   };
 
   return (
@@ -66,26 +101,58 @@ export default function RomanCalculator() {
         </header>
 
         <section className="bg-gray-950 px-5 pt-4 pb-3 min-h-28 flex flex-col justify-end">
+
+          {/* Stored value + pending operator hint */}
           {state.storedValue !== null && state.pendingOperator && (
             <div className="text-right text-xs text-gray-500 font-mono mb-1">
-              {state.mode === 'arabic' ? state.storedValue : (state.storedValue > MAX_ROMAN ? state.storedValue : toRoman(state.storedValue))} {state.pendingOperator}
+              {state.mode === 'arabic'
+                ? state.storedValue
+                : toRoman(state.storedValue) || state.storedValue
+              } {state.pendingOperator}
             </div>
           )}
+
+          {/* Primary display */}
           <div className="text-right font-mono tracking-wider">
-            {renderPrimaryDisplay()}
+            {isValueTooHigh ? (
+              <span className="text-3xl font-bold tracking-widest text-red-500">
+                Value Too High
+              </span>
+            ) : isInputBlocked ? (
+              <span className="text-4xl break-all text-red-400">
+                {state.currentInput}
+              </span>
+            ) : (
+              <span className="text-4xl break-all">
+                {state.currentInput || (state.mode === 'arabic' ? '0' : '_')}
+              </span>
+            )}
           </div>
 
-          <div className="text-right font-mono mt-1">
-            <span className="text-lg text-yellow-400 tracking-widest">
-              {getSecondaryValue()}
-            </span>
-          </div>
-
-          {state.errorMessage && state.errorMessage !== 'LIMIT REACHED' && (
-            <div className="mt-2 text-center text-[10px] text-red-400 font-bold uppercase tracking-tighter border-t border-red-900/50 pt-1">
-              {state.errorMessage}
+          {/* Secondary (converted) value — only shown in Roman mode */}
+          {secondary !== null && (
+            <div className="text-right font-mono mt-1">
+              <span className={`text-lg tracking-widest ${
+                isInputBlocked || isValueTooHigh ? 'text-red-400' : 'text-yellow-400'
+              }`}>
+                {secondary}
+              </span>
             </div>
           )}
+
+          {/* Error message bar */}
+          <div className="mt-2 min-h-[1.25rem] text-center text-[10px] font-bold uppercase tracking-tighter border-t border-gray-800 pt-1">
+            {isInputBlocked && (
+              <span className="text-red-400">Exceeds MMMCMXCIX — press ⌫ to fix</span>
+            )}
+            {isValueTooHigh && (
+              <span className="text-red-400">Result exceeds MMMCMXCIX — press AC</span>
+            )}
+            {hasOtherError && (
+              <span className="text-amber-400">{state.errorMessage}</span>
+            )}
+          </div>
+
         </section>
 
         <section className="px-4 pb-4 space-y-1.5">
@@ -111,8 +178,13 @@ export default function RomanCalculator() {
               <button
                 key={op}
                 type="button"
+                disabled={isInputBlocked}
                 onClick={() => dispatch({ type: 'SET_OPERATOR', payload: op })}
-                className={getBtnClass(state.pendingOperator === op && state.isAwaitingNextInput, 'op')}
+                className={getBtnClass(
+                  state.pendingOperator === op && state.isAwaitingNextInput,
+                  'op',
+                  isInputBlocked
+                )}
               >
                 {op}
               </button>
@@ -145,49 +217,29 @@ export default function RomanCalculator() {
             </div>
           ) : (
             <div className="space-y-1.5">
+              {/* Row 1: I V X L — 4 columns */}
               <div className="grid grid-cols-4 gap-2">
-                {ROMAN_BASIC.slice(0, 4).map(k => (
+                {ROMAN_ROW1.map(k => (
                   <button
                     key={k}
                     type="button"
+                    disabled={isInputBlocked}
                     onClick={() => dispatch({ type: 'INPUT_CHAR', payload: k })}
-                    className={`${getBtnClass(false, 'num')} font-mono`}
+                    className={`${getBtnClass(false, 'num', isInputBlocked)} font-mono`}
                   >
                     {k}
                   </button>
                 ))}
               </div>
+              {/* Row 2: C D M — 3 columns to make them equal width */}
               <div className="grid grid-cols-3 gap-2">
-                {ROMAN_BASIC.slice(4).map(k => (
+                {ROMAN_ROW2.map(k => (
                   <button
                     key={k}
                     type="button"
+                    disabled={isInputBlocked}
                     onClick={() => dispatch({ type: 'INPUT_CHAR', payload: k })}
-                    className={`${getBtnClass(false, 'num')} font-mono`}
-                  >
-                    {k}
-                  </button>
-                ))}
-              </div>
-              <div className="grid grid-cols-4 gap-2">
-                {ROMAN_HIGH.slice(0, 4).map(k => (
-                  <button
-                    key={k}
-                    type="button"
-                    onClick={() => dispatch({ type: 'INPUT_CHAR', payload: k })}
-                    className={`${getBtnClass(false, 'num')} font-mono`}
-                  >
-                    {k}
-                  </button>
-                ))}
-              </div>
-              <div className="grid grid-cols-3 gap-2">
-                {ROMAN_HIGH.slice(4).map(k => (
-                  <button
-                    key={k}
-                    type="button"
-                    onClick={() => dispatch({ type: 'INPUT_CHAR', payload: k })}
-                    className={`${getBtnClass(false, 'num')} font-mono`}
+                    className={`${getBtnClass(false, 'num', isInputBlocked)} font-mono`}
                   >
                     {k}
                   </button>
@@ -198,8 +250,9 @@ export default function RomanCalculator() {
 
           <button
             type="button"
+            disabled={isInputBlocked}
             onClick={() => dispatch({ type: 'CALCULATE' })}
-            className={`w-full ${getBtnClass(false, 'equals')}`}
+            className={`w-full ${getBtnClass(false, 'equals', isInputBlocked)}`}
           >
             =
           </button>
