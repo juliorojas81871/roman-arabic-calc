@@ -1,13 +1,12 @@
-// types.ts
-export type Operator = '+' | '−' | '×' | '÷';
 export type CalculatorMode = 'arabic' | 'roman';
+export type Operator = '+' | '−' | '×' | '÷';
 
 export interface CalculatorState {
   mode: CalculatorMode;
   currentInput: string;
   storedValue: number | null;
   pendingOperator: Operator | null;
-  isAwaitingNextInput: boolean;
+  isAwaitingNextInput: boolean; // Flag to clear display when starting a new operand
   errorMessage: string;
 }
 
