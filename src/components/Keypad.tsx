@@ -22,7 +22,7 @@ export function Keypad({ state, dispatch }: KeypadProps) {
     <section className="calc-keypad" aria-label="Keypad">
       <div className="calc-keypad__row calc-keypad__row--2col">
         <button type="button" onClick={() => send({ type: 'CLEAR' })} className={btnClass('clear')}>AC</button>
-        <button type="button" onClick={() => send({ type: 'BACKSPACE' })} className={btnClass('action')}>⌫ Back</button>
+        <button type="button" onClick={() => send({ type: 'BACKSPACE' })} className={btnClass('action')}>Back</button>
       </div>
 
       <div className="calc-keypad__row calc-keypad__row--4col">
