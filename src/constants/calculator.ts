@@ -1,13 +1,12 @@
 import type { Operator } from '../types/calculator';
 
-// Standard 3x3 numpad layout
 export const ARABIC_ROWS: string[][] = [
   ['7', '8', '9'],
   ['4', '5', '6'],
   ['1', '2', '3'],
 ];
 
-// Split to balance the UI grid (4 on top, 3 on bottom)
+// Split to ensure consistent button sizing across different grid densities
 export const ROMAN_ROW_1 = ['I', 'V', 'X', 'L'] as const;
 export const ROMAN_ROW_2 = ['C', 'D', 'M'] as const;
 

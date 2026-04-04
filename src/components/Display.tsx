@@ -1,15 +1,17 @@
 import type { CalculatorState } from '../types/calculator';
 import { toRoman, fromRoman } from '../utils/romanConverter';
 
-interface DisplayProps { state: CalculatorState; }
+interface DisplayProps {
+  state: CalculatorState;
+}
 
 function getSecondaryValue(state: CalculatorState): string | null {
   if (state.mode === 'arabic') return null;
   const { currentInput, errorMessage } = state;
 
-  // Show the numeric result even if it's an overflow so the user sees the 'why'
+  // Preserve the numeric input during overflow so users see the value causing the error
   if (errorMessage === 'Value Too High') return currentInput;
-  if (!currentInput) return '0';
+  if (!currentInput) return '_';
 
   const numeric = fromRoman(currentInput);
   return numeric == null ? '—' : String(numeric);
@@ -17,14 +19,13 @@ function getSecondaryValue(state: CalculatorState): string | null {
 
 export function Display({ state }: DisplayProps) {
   const { currentInput, storedValue, pendingOperator, errorMessage, mode } = state;
-
   const isValueTooHigh = errorMessage === 'Value Too High';
   const hasInlineError = errorMessage !== '' && !isValueTooHigh;
   const secondary = getSecondaryValue(state);
 
   return (
     <section className="calc-display" aria-label="Display">
-      {/* Show previous operand during chained ops (e.g. "X +") */}
+      {/* Visual hint for chained operations (e.g., "X +") */}
       {storedValue !== null && pendingOperator && (
         <div className="calc-display__hint">
           {mode === 'arabic' ? storedValue : (toRoman(storedValue) || storedValue)} {pendingOperator}
@@ -35,12 +36,15 @@ export function Display({ state }: DisplayProps) {
         {isValueTooHigh ? (
           <span className="calc-display__primary--error-high">Value Too High</span>
         ) : (
-          <span>{currentInput || (mode === 'arabic' ? '0' : '_')}</span>
+          <span aria-live="polite">
+            {currentInput || <span aria-hidden="true">_</span>}
+            {!currentInput && <span className="sr-only">Empty</span>}
+          </span>
         )}
       </div>
 
       {secondary !== null && (
-        <div className={`calc-display__secondary ${isValueTooHigh ? 'calc-display__secondary--error' : ''}`}>
+        <div className={`calc-display__secondary ${isValueTooHigh ? 'calc-display__secondary--error' : 'calc-display__secondary--normal'}`}>
           {secondary}
         </div>
       )}
@@ -48,7 +52,7 @@ export function Display({ state }: DisplayProps) {
       <div className="calc-display__error-bar" role="alert">
         {isValueTooHigh && (
           <span className="calc-display__error-bar--red">
-            Result exceeds MMMCMXCIX — Press AC
+            Result exceeds 3,999,999 — Press AC
           </span>
         )}
         {hasInlineError && (
