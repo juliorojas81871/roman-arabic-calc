@@ -72,7 +72,7 @@ export function Display({ state }: DisplayProps) {
         className="mt-2 min-h-5 text-center text-[0.625rem] font-bold uppercase tracking-wide border-t border-gray-700 pt-1"
         role="alert"
       >
-        {isOverflow && <span className="text-red-400">Result exceeds 3999</span>}
+        {isOverflow && <span className="text-red-400">Number exceeds 3999</span>}
         {isUnderflow && <span className="text-orange-400">Roman numerals cannot be zero or negative</span>}
         {isGenericError && <span className="text-yellow-300">{error}</span>}
       </div>
