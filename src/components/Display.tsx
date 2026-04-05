@@ -10,20 +10,24 @@ function getConvertedLabel(state: CalcState): string | null {
   if (state.activeMode === 'arabic') return null;
 
   const { input, error } = state;
+  if (error === 'Value too large for Roman numerals') return input;
 
-  if (error === 'Value Too High') return input;
+  if (error === 'Roman numerals cannot be zero or negative') return input;
 
   if (!input) return '_';
 
   const numeric = fromRoman(input);
-
   return numeric == null ? '—' : String(numeric);
 }
 
 export function Display({ state }: DisplayProps) {
   const { input, savedValue, operation, error, activeMode } = state;
-  const isOverflow = error === 'Value Too High';
-  const isGenericError = error !== '' && !isOverflow;
+
+  const isOverflow = error === 'Value too large for Roman numerals';
+  const isUnderflow = error === 'Roman numerals cannot be zero or negative';
+  const isRangeError = isOverflow || isUnderflow;
+  const isGenericError = error !== '' && !isRangeError;
+
   const secondaryDisplay = getConvertedLabel(state);
 
   return (
@@ -38,11 +42,15 @@ export function Display({ state }: DisplayProps) {
       )}
 
       <div className={twMerge(
-        'text-right font-mono font-bold tracking-wide break-all text-white',
-        activeMode === 'arabic' ? 'text-3xl' : 'text-4xl'
+        'text-right font-mono font-bold tracking-wide break-all',
+        activeMode === 'arabic' ? 'text-3xl text-white' : 'text-4xl text-white',
+        isOverflow && 'text-red-400 text-2xl',
+        isUnderflow && 'text-orange-400 text-2xl',
       )}>
         {isOverflow ? (
-          <span className="text-red-400 text-3xl">Value Too High</span>
+          <span>Value Too High</span>
+        ) : isUnderflow ? (
+          <span>Value Too Low</span>
         ) : (
           <span aria-live="polite">
             {input || <span aria-hidden="true">_</span>}
@@ -54,7 +62,7 @@ export function Display({ state }: DisplayProps) {
       {secondaryDisplay !== null && (
         <div className={twMerge(
           'text-right font-mono text-lg tracking-wide mt-1',
-          isOverflow ? 'text-red-400' : 'text-emerald-300'
+          isOverflow ? 'text-red-400' : isUnderflow ? 'text-orange-400' : 'text-emerald-300'
         )}>
           {secondaryDisplay}
         </div>
@@ -64,7 +72,8 @@ export function Display({ state }: DisplayProps) {
         className="mt-2 min-h-5 text-center text-[0.625rem] font-bold uppercase tracking-wide border-t border-gray-700 pt-1"
         role="alert"
       >
-        {isOverflow && <span className="text-red-400">Result exceeds 3,999,999 — Press AC</span>}
+        {isOverflow && <span className="text-red-400">Result exceeds 3999</span>}
+        {isUnderflow && <span className="text-orange-400">Roman numerals cannot be zero or negative</span>}
         {isGenericError && <span className="text-yellow-300">{error}</span>}
       </div>
     </section>
