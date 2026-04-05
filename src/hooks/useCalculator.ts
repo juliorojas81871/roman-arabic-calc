@@ -1,6 +1,7 @@
 import { useReducer } from 'react';
-import { fromRoman, toRoman, MAX_ROMAN_LIMIT } from '../utils/romanConverter';
+import { fromRoman, toRoman } from '../utils/romanConverter';
 import { getRomanInputError } from '../utils/romanValidator';
+import { MAX_ROMAN_LIMIT } from '../utils/romanConstants';
 
 const startState = {
   activeMode: 'arabic' as 'arabic' | 'roman',
@@ -13,14 +14,21 @@ const startState = {
 
 export type CalcState = typeof startState;
 
+export type CalcAction =
+  | { type: 'INPUT_CHAR'; payload: string }
+  | { type: 'SET_OPERATOR'; payload: string }
+  | { type: 'CALCULATE' | 'CLEAR' | 'BACKSPACE' | 'TOGGLE_MODE' };
+
 function solve(a: number, b: number, op: string, mode: string): number | string {
   const calculations: Record<string, () => number | string> = {
     '+': () => a + b,
     '-': () => a - b,
     '*': () => a * b,
     '/': () => {
-      if (b === 0) return 'Division by zero is not allowed.';
+      if (b === 0) return 'Cannot divide by zero';
+
       if (mode === 'roman' && !Number.isInteger(a / b)) return 'Roman numerals require whole numbers.';
+
       return a / b;
     },
   };
@@ -30,7 +38,7 @@ function solve(a: number, b: number, op: string, mode: string): number | string 
 const checkBounds = (val: number, mode: string) =>
   mode === 'roman' && (val > MAX_ROMAN_LIMIT || val < 1);
 
-function calcReducer(state: CalcState, action: { type: string; payload?: string }): CalcState {
+function calcReducer(state: CalcState, action: CalcAction): CalcState {
   const getNumericValue = () =>
     state.activeMode === 'arabic'
       ? parseFloat(state.input)
@@ -38,7 +46,7 @@ function calcReducer(state: CalcState, action: { type: string; payload?: string 
 
   switch (action.type) {
     case 'INPUT_CHAR': {
-      const char = action.payload ?? '';
+      const char = action.payload;
       const current = state.waitingForNext ? '' : state.input;
 
       if (state.activeMode === 'roman') {
@@ -60,15 +68,17 @@ function calcReducer(state: CalcState, action: { type: string; payload?: string 
 
     case 'SET_OPERATOR': {
       const val = getNumericValue();
-      const nextOp = action.payload ?? null;
+      const nextOp = action.payload;
       if (isNaN(val)) return { ...state, operation: nextOp };
 
       if (state.savedValue !== null && state.operation && !state.waitingForNext) {
         const result = solve(state.savedValue, val, state.operation, state.activeMode);
         if (typeof result === 'string') return { ...state, error: result };
+
         if (checkBounds(result, state.activeMode)) {
           return { ...state, input: String(result), savedValue: null, operation: null, waitingForNext: true, error: 'Value Too High' };
         }
+
         return { ...state, savedValue: result, input: '', operation: nextOp, waitingForNext: true };
       }
 
@@ -78,9 +88,11 @@ function calcReducer(state: CalcState, action: { type: string; payload?: string 
     case 'CALCULATE': {
       if (state.savedValue === null || state.operation === null) return state;
       const val = getNumericValue();
+
       if (isNaN(val)) return state;
 
       const result = solve(state.savedValue, val, state.operation, state.activeMode);
+
       if (typeof result === 'string') return { ...state, error: result };
 
       if (checkBounds(result, state.activeMode)) {
@@ -111,14 +123,23 @@ function calcReducer(state: CalcState, action: { type: string; payload?: string 
       };
 
       if (nextMode === 'roman') {
+        if (state.input && parseFloat(state.input) > MAX_ROMAN_LIMIT) {
+          return { ...startState, activeMode: nextMode, error: 'Value too large for Roman numerals' };
+        }
+
         if (!isValidTransfer(state.input) || !isValidTransfer(state.savedValue)) {
           return { ...startState, activeMode: nextMode, error: 'No decimal or negative when transfer' };
         }
+
         const converted = state.input ? (toRoman(parseFloat(state.input)) || '') : '';
         return { ...state, activeMode: nextMode, input: converted, error: '' };
       }
 
-      const backToDigits = state.input ? (String(fromRoman(state.input)) || '') : '';
+      const rawNum = parseFloat(state.input);
+      const backToDigits = state.input
+        ? (isNaN(rawNum) ? String(fromRoman(state.input) ?? '') : String(rawNum))
+        : '';
+
       return { ...state, activeMode: nextMode, input: backToDigits, error: '' };
     }
 

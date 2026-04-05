@@ -1,6 +1,4 @@
-import { ROMAN_MAP } from './romanConstants';
-
-export const MAX_ROMAN_LIMIT = 3999999;
+import { ROMAN_MAP, MAX_ROMAN_LIMIT } from './romanConstants';
 
 export function toRoman(numberToConvert: number): string {
   if (!Number.isInteger(numberToConvert) || numberToConvert < 1 || numberToConvert > MAX_ROMAN_LIMIT) {

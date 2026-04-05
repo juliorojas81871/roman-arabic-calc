@@ -1,24 +1,24 @@
 import { twMerge } from 'tailwind-merge';
-import type { CalcState } from '../hooks/useCalculator';
+import type { CalcState, CalcAction } from '../hooks/useCalculator';
 
 interface KeypadProps {
   state: CalcState;
-  dispatch: React.Dispatch<{ type: string; payload?: string }>;
+  dispatch: React.Dispatch<CalcAction>;
 }
 
 type ButtonType = 'number' | 'operator' | 'action' | 'clear' | 'equals';
 
 const buttonThemes: Record<ButtonType, string> = {
-  number: 'bg-gray-800 text-white hover:bg-gray-700',
-  operator: 'bg-amber-700 text-gray-900 text-xl hover:bg-amber-600',
-  clear: 'bg-red-700 text-white hover:bg-red-600',
-  action: 'bg-gray-600 text-white hover:bg-gray-500',
-  equals: 'bg-yellow-500 text-gray-900 text-xl hover:bg-yellow-400',
+  number: 'bg-gray-50 text-gray-800 border border-gray-200 hover:bg-gray-100',
+  operator: 'bg-[#A7F3D0] text-gray-800 hover:bg-emerald-200',
+  clear: 'bg-[#FCA5A5] text-white hover:bg-red-300',
+  action: 'bg-gray-100 text-gray-600 border border-gray-200 hover:bg-gray-200',
+  equals: 'bg-[#4F46E5] text-white hover:bg-indigo-500',
 };
 
 function getButtonClass(type: ButtonType): string {
   return twMerge(
-    'rounded-xl font-semibold text-lg leading-none py-3 border-none cursor-pointer select-none flex items-center justify-center disabled:opacity-30 disabled:cursor-not-allowed',
+    'font-semibold text-lg leading-none py-3 cursor-pointer select-none flex items-center justify-center transition-colors',
     buttonThemes[type]
   );
 }
@@ -32,10 +32,9 @@ export function Keypad({ state, dispatch }: KeypadProps) {
         <button
           type="button"
           onClick={() => dispatch({ type: 'CLEAR' })}
-          className={getButtonClass('clear')}
-        >
-          AC
-        </button>
+          className={getButtonClass('clear')}>
+            AC
+          </button>
         <button
           type="button"
           onClick={() => dispatch({ type: 'BACKSPACE' })}
@@ -46,7 +45,7 @@ export function Keypad({ state, dispatch }: KeypadProps) {
       </div>
 
       <div className="grid grid-cols-4 gap-2">
-        {['+', '-', '*', '/'].map((symbol) => (
+        {['+', '-', '*', '/'].map(symbol => (
           <button
             key={symbol}
             type="button"
@@ -77,18 +76,17 @@ export function Keypad({ state, dispatch }: KeypadProps) {
           <div className="grid grid-cols-2 gap-2">
             <button
               type="button"
-              onClick={() => dispatch({ type: 'INPUT_CHAR', payload: '0' })} 
+              onClick={() => dispatch({ type: 'INPUT_CHAR', payload: '0' })}
               className={getButtonClass('number')}
-            >
-              0
-            </button>
+              >
+                0
+              </button>
             <button
               type="button"
-              onClick={() => dispatch({ type: 'INPUT_CHAR', payload: '.' })} 
-              className={getButtonClass('number')}
-            >
-              .
-            </button>
+              onClick={() => dispatch({ type: 'INPUT_CHAR', payload: '.' })}
+              className={getButtonClass('number')}>
+                .
+              </button>
           </div>
         </div>
       ) : (
