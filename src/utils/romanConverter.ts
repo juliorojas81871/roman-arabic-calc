@@ -1,35 +1,50 @@
 import { ROMAN_MAP } from './romanConstants';
 
-export const MAX_ROMAN = 3999999;
+export const MAX_ROMAN_LIMIT = 3999999;
 
-export function toRoman(num: number): string {
-  if (!Number.isInteger(num) || num < 1 || num > MAX_ROMAN) return '';
-  let result = '';
-  let remainder = num;
-  for (const [symbol, value] of ROMAN_MAP) {
-    while (remainder >= value) {
-      result += symbol;
-      remainder -= value;
+export function toRoman(numberToConvert: number): string {
+  if (!Number.isInteger(numberToConvert) || numberToConvert < 1 || numberToConvert > MAX_ROMAN_LIMIT) {
+    return '';
+  }
+
+  let finalRomanString = '';
+  let leftoverValue = numberToConvert;
+
+  for (const [romanSymbol, numericValue] of ROMAN_MAP) {
+    while (leftoverValue >= numericValue) {
+      finalRomanString += romanSymbol;
+      leftoverValue -= numericValue;
     }
   }
-  return result;
+
+  return finalRomanString;
 }
 
-export function fromRoman(input: string): number | null {
-  if (!input.trim()) return null;
-  const sanitized = input.toUpperCase();
-  let index = 0, total = 0;
-  while (index < sanitized.length) {
-    let matched = false;
-    for (const [symbol, value] of ROMAN_MAP) {
-      if (sanitized[index] === symbol) {
-        total += value;
-        index += symbol.length;
-        matched = true;
+export function fromRoman(romanInput: string): number | null {
+  if (!romanInput.trim()) return null;
+
+  const uppercaseInput = romanInput.toUpperCase();
+  let currentIndex = 0;
+  let calculatedTotal = 0;
+
+  while (currentIndex < uppercaseInput.length) {
+    let foundMatch = false;
+
+    for (const [romanSymbol, numericValue] of ROMAN_MAP) {
+      if (uppercaseInput.startsWith(romanSymbol, currentIndex)) {
+        calculatedTotal += numericValue;
+        currentIndex += romanSymbol.length;
+        foundMatch = true;
         break;
       }
     }
-    if (!matched) return null;
+
+    if (!foundMatch) return null;
   }
-  return (total < 1 || total > MAX_ROMAN) ? null : total;
+
+  if (calculatedTotal < 1 || calculatedTotal > MAX_ROMAN_LIMIT) {
+    return null;
+  }
+
+  return calculatedTotal;
 }

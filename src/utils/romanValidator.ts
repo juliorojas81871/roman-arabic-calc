@@ -1,50 +1,59 @@
 import { ROMAN_VALUES } from './romanConstants';
 
-const VALID_SUBTRACTIVES = new Set(['IV', 'IX', 'XL', 'XC', 'CD', 'CM']);
-const UNIQUE_NUMERALS = new Set(['V', 'L', 'D']);
-const FIVE_OF: Readonly<Record<string, string>> = { I: 'V', X: 'L', C: 'D' };
+const validSubtractivePairs = new Set(['IV', 'IX', 'XL', 'XC', 'CD', 'CM']);
+const singleUseSymbols = new Set(['V', 'L', 'D']);
 
-// Validates token sequence (e.g. catches IXI which passes char-by-char checks but is illegal)
-function hasNonIncreasingTokens(s: string): boolean {
-  const upper = s.toUpperCase();
-  const values: number[] = [];
-  let i = 0;
+function isDescendingOrder(romanSequence: string): boolean {
+  const uppercaseText = romanSequence.toUpperCase();
+  const sequenceValues: number[] = [];
+  let currentIndex = 0;
 
-  while (i < upper.length) {
-    const pair = upper[i] + (upper[i + 1] ?? '');
-    if (VALID_SUBTRACTIVES.has(pair)) {
-      values.push(ROMAN_VALUES[upper[i + 1]]);
-      i += 2;
+  while (currentIndex < uppercaseText.length) {
+    const currentPair = uppercaseText[currentIndex] + (uppercaseText[currentIndex + 1] ?? '');
+
+    if (validSubtractivePairs.has(currentPair)) {
+      sequenceValues.push(ROMAN_VALUES[uppercaseText[currentIndex + 1]]);
+      currentIndex += 2;
     } else {
-      values.push(ROMAN_VALUES[upper[i]] ?? 0);
-      i++;
+      sequenceValues.push(ROMAN_VALUES[uppercaseText[currentIndex]] ?? 0);
+      currentIndex += 1;
     }
   }
-  return values.every((val, j) => j === 0 || val <= values[j - 1]);
+
+  return sequenceValues.every((value, index) => index === 0 || value <= sequenceValues[index - 1]);
 }
 
-export function getRomanInputError(current: string, addChar: string): string | null {
-  const base = current.toUpperCase();
-  const ch = addChar.toUpperCase();
-  const val = (c: string) => ROMAN_VALUES[c] ?? 0;
-  const len = base.length;
-  const [p1, p2, p3] = [base[len - 1], base[len - 2], base[len - 3]];
+export function getRomanInputError(currentInput: string, nextCharacter: string): string | null {
+  const baseText = currentInput.toUpperCase();
+  const newChar = nextCharacter.toUpperCase();
+  const getNumericValue = (char: string) => ROMAN_VALUES[char] ?? 0;
+  const inputLength = baseText.length;
+  const [lastChar, secondLastChar, thirdLastChar] = [baseText[inputLength - 1], baseText[inputLength - 2], baseText[inputLength - 3]];
 
-  if (UNIQUE_NUMERALS.has(ch) && base.includes(ch)) return `${ch} cannot be repeated`;
-  if (!UNIQUE_NUMERALS.has(ch) && p1 === ch && p2 === ch && p3 === ch) {
-    return `${ch} cannot repeat more than 3 times`;
+  if (singleUseSymbols.has(newChar) && baseText.includes(newChar)) {
+    return `${newChar} cannot be repeated`;
   }
 
-  if (p1 && val(ch) > val(p1)) {
-    if (!VALID_SUBTRACTIVES.has(p1 + ch)) return `${p1 + ch} is an invalid pair`;
-    if (p2 === p1) return `Double subtraction (${p2}${p1}${ch}) is illegal`;
+  if (!singleUseSymbols.has(newChar) && lastChar === newChar && secondLastChar === newChar && thirdLastChar === newChar) {
+    return `${newChar} cannot repeat more than 3 times`;
   }
 
-  if (ch in FIVE_OF && p1 === ch && p2 === FIVE_OF[ch]) return `${p2}${p1}${ch} is a middle-five violation`;
-
-  if (p1 && p2 && VALID_SUBTRACTIVES.has(p2 + p1) && val(ch) >= val(p2)) {
-    return `Invalid sequence after subtractive pair: ${p2}${p1}${ch}`;
+  if (lastChar && getNumericValue(newChar) > getNumericValue(lastChar)) {
+    if (!validSubtractivePairs.has(lastChar + newChar)) {
+      return `${lastChar + newChar} is an invalid pair`;
+    }
+    if (secondLastChar === lastChar) {
+      return `Double subtraction (${secondLastChar}${lastChar}${newChar}) is illegal`;
+    }
   }
 
-  return hasNonIncreasingTokens(base + ch) ? null : `${ch} breaks descending order`;
+  if (lastChar && secondLastChar && validSubtractivePairs.has(secondLastChar + lastChar) && getNumericValue(newChar) >= getNumericValue(secondLastChar)) {
+    return `Invalid sequence after subtractive pair: ${secondLastChar}${lastChar}${newChar}`;
+  }
+
+  if (!isDescendingOrder(baseText + newChar)) {
+    return `${newChar} breaks descending order`;
+  }
+
+  return null;
 }

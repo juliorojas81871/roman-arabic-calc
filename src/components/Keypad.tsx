@@ -1,110 +1,119 @@
-import { useCallback } from 'react';
-import type { CalculatorAction, Operator, CalculatorState } from '../types/calculator';
-import { ARABIC_ROWS, ROMAN_ROW_1, ROMAN_ROW_2, OPERATORS } from '../constants/calculator';
+import { twMerge } from 'tailwind-merge';
+import type { CalcState } from '../hooks/useCalculator';
 
 interface KeypadProps {
-  state: CalculatorState;
-  dispatch: React.Dispatch<CalculatorAction>;
-  lastPressed: string | null;
-  setLastPressed: (key: string | null) => void;
+  state: CalcState;
+  dispatch: React.Dispatch<{ type: string; payload?: string }>;
 }
 
-type BtnVariant = 'num' | 'op' | 'action' | 'clear' | 'equals';
+type ButtonType = 'number' | 'operator' | 'action' | 'clear' | 'equals';
 
-function btnClass(variant: BtnVariant, active = false): string {
-  const baseClass = `calc-btn-base calc-btn-${variant}`;
-  return active ? `${baseClass} calc-btn-active` : baseClass;
+const buttonThemes: Record<ButtonType, string> = {
+  number: 'bg-gray-800 text-white hover:bg-gray-700',
+  operator: 'bg-amber-700 text-gray-900 text-xl hover:bg-amber-600',
+  clear: 'bg-red-700 text-white hover:bg-red-600',
+  action: 'bg-gray-600 text-white hover:bg-gray-500',
+  equals: 'bg-yellow-500 text-gray-900 text-xl hover:bg-yellow-400',
+};
+
+function getButtonClass(type: ButtonType): string {
+  return twMerge(
+    'rounded-xl font-semibold text-lg leading-none py-3 border-none cursor-pointer select-none flex items-center justify-center disabled:opacity-30 disabled:cursor-not-allowed',
+    buttonThemes[type]
+  );
 }
 
-export function Keypad({ state, dispatch, lastPressed, setLastPressed }: KeypadProps) {
-  const { mode, pendingOperator, isAwaitingNextInput } = state;
-
-  // Wraps dispatch to handle the visual "flash" feedback for physical and virtual clicks
-  const send = useCallback((action: CalculatorAction, key: string) => {
-    dispatch(action);
-    setLastPressed(key);
-    setTimeout(() => setLastPressed(null), 120);
-  }, [dispatch, setLastPressed]);
-
-  const isActive = (key: string) => lastPressed === key;
+export function Keypad({ state, dispatch }: KeypadProps) {
+  const { activeMode } = state;
 
   return (
-    <section className="calc-keypad" aria-label="Keypad">
-      <div className="calc-keypad__row calc-keypad__row--2col">
-        <button 
-          type="button" 
-          onClick={() => send({ type: 'CLEAR' }, 'AC')} 
-          className={btnClass('clear', isActive('AC'))}
+    <section className="p-4 flex flex-col gap-1.5" aria-label="Calculator Keypad">
+      <div className="grid grid-cols-2 gap-2">
+        <button
+          type="button"
+          onClick={() => dispatch({ type: 'CLEAR' })}
+          className={getButtonClass('clear')}
         >
           AC
         </button>
-        <button 
-          type="button" 
-          onClick={() => send({ type: 'BACKSPACE' }, 'Back')} 
-          className={btnClass('action', isActive('Back'))}
+        <button
+          type="button"
+          onClick={() => dispatch({ type: 'BACKSPACE' })}
+          className={getButtonClass('action')}
         >
           Back
         </button>
       </div>
 
-      <div className="calc-keypad__row calc-keypad__row--4col">
-        {OPERATORS.map((op: Operator) => (
+      <div className="grid grid-cols-4 gap-2">
+        {['+', '-', '*', '/'].map((symbol) => (
           <button
-            key={op}
+            key={symbol}
             type="button"
-            onClick={() => send({ type: 'SET_OPERATOR', payload: op }, op)}
-            className={btnClass('op', (pendingOperator === op && isAwaitingNextInput) || isActive(op))}
+            onClick={() => dispatch({ type: 'SET_OPERATOR', payload: symbol })}
+            className={getButtonClass('operator')}
           >
-            {op}
+            {symbol}
           </button>
         ))}
       </div>
 
-      {mode === 'arabic' ? (
-        <div className="calc-keypad__digits">
-          {ARABIC_ROWS.map((row, i) => (
-            <div key={i} className="calc-keypad__row calc-keypad__row--3col">
-              {row.map(d => (
+      {activeMode === 'arabic' ? (
+        <div className="mt-1.5 flex flex-col gap-1.5">
+          {[['7', '8', '9'], ['4', '5', '6'], ['1', '2', '3']].map((row, i) => (
+            <div key={i} className="grid grid-cols-3 gap-2">
+              {row.map(digit => (
                 <button
-                  key={d}
+                  key={digit}
                   type="button"
-                  onClick={() => send({ type: 'INPUT_CHAR', payload: d }, d)}
-                  className={btnClass('num', isActive(d))}
+                  onClick={() => dispatch({ type: 'INPUT_CHAR', payload: digit })}
+                  className={getButtonClass('number')}
                 >
-                  {d}
+                  {digit}
                 </button>
               ))}
             </div>
           ))}
-          <div className="calc-keypad__row calc-keypad__row--2col">
-            <button type="button" onClick={() => send({ type: 'INPUT_CHAR', payload: '0' }, '0')} className={btnClass('num', isActive('0'))}>0</button>
-            <button type="button" onClick={() => send({ type: 'INPUT_CHAR', payload: '.' }, '.')} className={btnClass('num', isActive('.'))}>.</button>
+          <div className="grid grid-cols-2 gap-2">
+            <button
+              type="button"
+              onClick={() => dispatch({ type: 'INPUT_CHAR', payload: '0' })} 
+              className={getButtonClass('number')}
+            >
+              0
+            </button>
+            <button
+              type="button"
+              onClick={() => dispatch({ type: 'INPUT_CHAR', payload: '.' })} 
+              className={getButtonClass('number')}
+            >
+              .
+            </button>
           </div>
         </div>
       ) : (
-        <div className="calc-keypad__digits">
-          {/* Roman layout split into two rows for better tap targets on mobile */}
-          <div className="calc-keypad__row calc-keypad__row--4col">
-            {ROMAN_ROW_1.map(k => (
+        <div className="mt-1.5 flex flex-col gap-1.5">
+          <div className="grid grid-cols-4 gap-2">
+            {['I', 'V', 'X', 'L'].map(roman => (
               <button
-                key={k}
+                key={roman}
                 type="button"
-                onClick={() => send({ type: 'INPUT_CHAR', payload: k }, k)}
-                className={`${btnClass('num', isActive(k))} font-mono`}
+                onClick={() => dispatch({ type: 'INPUT_CHAR', payload: roman })}
+                className={twMerge(getButtonClass('number'), 'font-mono')}
               >
-                {k}
+                {roman}
               </button>
             ))}
           </div>
-          <div className="calc-keypad__row calc-keypad__row--3col">
-            {ROMAN_ROW_2.map(k => (
+          <div className="grid grid-cols-3 gap-2">
+            {['C', 'D', 'M'].map(roman => (
               <button
-                key={k}
+                key={roman}
                 type="button"
-                onClick={() => send({ type: 'INPUT_CHAR', payload: k }, k)}
-                className={`${btnClass('num', isActive(k))} font-mono`}
+                onClick={() => dispatch({ type: 'INPUT_CHAR', payload: roman })}
+                className={twMerge(getButtonClass('number'), 'font-mono')}
               >
-                {k}
+                {roman}
               </button>
             ))}
           </div>
@@ -113,8 +122,8 @@ export function Keypad({ state, dispatch, lastPressed, setLastPressed }: KeypadP
 
       <button
         type="button"
-        onClick={() => send({ type: 'CALCULATE' }, '=')}
-        className={`w-full ${btnClass('equals', isActive('='))}`}
+        onClick={() => dispatch({ type: 'CALCULATE' })}
+        className={twMerge('w-full mt-2', getButtonClass('equals'))}
       >
         =
       </button>

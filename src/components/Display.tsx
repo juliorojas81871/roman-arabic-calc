@@ -1,62 +1,69 @@
-import type { CalculatorState } from '../types/calculator';
+import { twMerge } from 'tailwind-merge';
+import type { CalcState } from '../hooks/useCalculator';
 import { toRoman, fromRoman } from '../utils/romanConverter';
 
 interface DisplayProps {
-  state: CalculatorState;
+  state: CalcState;
 }
 
-function getSecondaryValue(state: CalculatorState): string | null {
-  if (state.mode === 'arabic') return null;
-  const { currentInput, errorMessage } = state;
-
-  // Preserve the numeric input during overflow so users see the value causing the error
-  if (errorMessage === 'Value Too High') return currentInput;
-  if (!currentInput) return '_';
-
-  const numeric = fromRoman(currentInput);
+function getConvertedLabel(state: CalcState): string | null {
+  if (state.activeMode === 'arabic') return null;
+  const { input, error } = state;
+  if (error === 'Value Too High') return input;
+  if (!input) return '_';
+  const numeric = fromRoman(input);
   return numeric == null ? '—' : String(numeric);
 }
 
 export function Display({ state }: DisplayProps) {
-  const { currentInput, storedValue, pendingOperator, errorMessage, mode } = state;
-  const isValueTooHigh = errorMessage === 'Value Too High';
-  const hasInlineError = errorMessage !== '' && !isValueTooHigh;
-  const secondary = getSecondaryValue(state);
+  const { input, savedValue, operation, error, activeMode } = state;
+  const isOverflow = error === 'Value Too High';
+  const isGenericError = error !== '' && !isOverflow;
+  const secondaryDisplay = getConvertedLabel(state);
 
   return (
-    <section className="calc-display" aria-label="Display">
-      {/* Visual hint for chained operations (e.g., "X +") */}
-      {storedValue !== null && pendingOperator && (
-        <div className="calc-display__hint">
-          {mode === 'arabic' ? storedValue : (toRoman(storedValue) || storedValue)} {pendingOperator}
+    <section
+      className="bg-gray-950 px-4 py-4 pb-2 min-h-36 flex flex-col justify-end"
+      aria-label="Display"
+    >
+      {savedValue !== null && operation && (
+        <div className="text-right text-xs font-mono text-gray-500 mb-1">
+          {activeMode === 'arabic' ? savedValue : (toRoman(savedValue) || savedValue)} {operation}
         </div>
       )}
 
-      <div className="calc-display__primary">
-        {isValueTooHigh ? (
-          <span className="calc-display__primary--error-high">Value Too High</span>
+      <div className={twMerge(
+        'text-right font-mono font-bold tracking-wide break-all',
+        activeMode === 'arabic' ? 'text-3xl' : 'text-4xl'
+      )}>
+        {isOverflow ? (
+          <span className="text-red-500 text-3xl">Value Too High</span>
         ) : (
           <span aria-live="polite">
-            {currentInput || <span aria-hidden="true">_</span>}
-            {!currentInput && <span className="sr-only">Empty</span>}
+            {input || <span aria-hidden="true">_</span>}
+            {!input && <span className="sr-only">Empty</span>}
           </span>
         )}
       </div>
 
-      {secondary !== null && (
-        <div className={`calc-display__secondary ${isValueTooHigh ? 'calc-display__secondary--error' : 'calc-display__secondary--normal'}`}>
-          {secondary}
+      {secondaryDisplay !== null && (
+        <div className={twMerge(
+          'text-right font-mono text-lg tracking-wide mt-1',
+          isOverflow ? 'text-red-400' : 'text-yellow-500'
+        )}>
+          {secondaryDisplay}
         </div>
       )}
 
-      <div className="calc-display__error-bar" role="alert">
-        {isValueTooHigh && (
-          <span className="calc-display__error-bar--red">
-            Result exceeds 3,999,999 — Press AC
-          </span>
+      <div
+        className="mt-2 min-h-5 text-center text-[0.625rem] font-bold uppercase tracking-wide border-t border-gray-800 pt-1" 
+        role="alert"
+      >
+        {isOverflow && (
+          <span className="text-red-400">Result exceeds 3,999,999 — Press AC</span>
         )}
-        {hasInlineError && (
-          <span className="calc-display__error-bar--amber">{errorMessage}</span>
+        {isGenericError && (
+          <span className="text-yellow-400">{error}</span>
         )}
       </div>
     </section>
